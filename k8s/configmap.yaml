@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: poker-config
+data:
+  backend_url: "http://poker-backend-service:8080"
+  frontend_port: "80"
+  backend_port: "8080"

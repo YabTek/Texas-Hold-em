@@ -1,0 +1,36 @@
+# Backend
+backend/main
+backend/*.exe
+backend/*.test
+backend/*.out
+
+# Frontend
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+frontend/build/
+frontend/.pub-cache/
+frontend/.pub/
+frontend/pubspec.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker
+*.log
+
+# Environment
+.env
+.env.local
+
+# Kubernetes secrets
+k8s/*secret*.yaml
+
+# Load testing results
+k6/results/

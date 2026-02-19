@@ -1,0 +1,37 @@
+DEPLOYMENT COMMANDS FOR GCP CLOUD SHELL
+=========================================
+
+1. Open GCP Cloud Shell at: https://console.cloud.google.com/
+
+2. Run these commands one by one:
+
+# Deploy Backend v2 (contains poker logic fix)
+kubectl set image deployment/poker-backend backend=gcr.io/texas-holdem-poker-3269/poker-backend:v2
+
+# Wait for backend rollout
+kubectl rollout status deployment/poker-backend
+
+# Deploy Frontend v8 (fixes DNS resolution error + final UI)
+kubectl set image deployment/poker-frontend frontend=gcr.io/texas-holdem-poker-3269/poker-frontend:v8
+
+# Wait for frontend rollout
+kubectl rollout status deployment/poker-frontend
+
+# Verify deployments
+kubectl get deployments
+kubectl get pods
+
+3. After both rollouts complete, refresh your browser at:
+   http://34.26.210.67
+
+4. Test that the error is gone and all screens work properly
+
+WHAT THIS FIXES:
+- Backend v2: Fixes poker logic (all 27 test cases pass)
+- Frontend v8: CRITICAL FIX - resolves DNS error ERR_NAME_NOT_RESOLVED
+  * Changed API calls from absolute URL to relative paths (/api/...)
+  * Added nginx proxy configuration to forward /api/* to backend
+  * Complete blue theme, "Community Cards" everywhere
+- The "ERR_NAME_NOT_RESOLVED" error will be resolved with v8
+
+NOTE: These commands must be run in GCP Cloud Shell, not local PowerShell.
