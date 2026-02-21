@@ -24,8 +24,9 @@ type EvaluateHandResponse struct {
 }
 
 type CompareHandsRequest struct {
-	Player1 EvaluateHandRequest `json:"player1"`
-	Player2 EvaluateHandRequest `json:"player2"`
+	Player1HoleCards []string `json:"player1HoleCards"`
+	Player2HoleCards []string `json:"player2HoleCards"`
+	CommunityCards []string `json:"communityCards"`
 }
 
 type CompareHandsResponse struct {
@@ -98,20 +99,26 @@ func handleCompareHands(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(req.Player1.HoleCards) != 2 || len(req.Player1.BoardCards) != 5 {
-		http.Error(w, "Player 1: Must provide exactly 2 hole cards and 5 board cards", http.StatusBadRequest)
+	if len(req.Player1HoleCards) != 2 {
+		http.Error(w, "Player 1: Must provide exactly 2 hole cards", http.StatusBadRequest)
 		return
 	}
 
-	if len(req.Player2.HoleCards) != 2 || len(req.Player2.BoardCards) != 5 {
-		http.Error(w, "Player 2: Must provide exactly 2 hole cards and 5 board cards", http.StatusBadRequest)
+	if len(req.Player2HoleCards) != 2 {
+		http.Error(w, "Player 2: Must provide exactly 2 hole cards", http.StatusBadRequest)
 		return
 	}
 
-	allCards1 := append(req.Player1.HoleCards, req.Player1.BoardCards...)
+	if len(req.CommunityCards) != 5 {
+		http.Error(w, "Must provide exactly 5 community cards", http.StatusBadRequest)
+		return
+	}
+
+	// Each player's 7 cards = 2 hole cards + 5 community cards
+	allCards1 := append(req.Player1HoleCards, req.CommunityCards...)
 	hand1, value1, bestCards1 := poker.EvaluateHand(allCards1)
 
-	allCards2 := append(req.Player2.HoleCards, req.Player2.BoardCards...)
+	allCards2 := append(req.Player2HoleCards, req.CommunityCards...)
 	hand2, value2, bestCards2 := poker.EvaluateHand(allCards2)
 
 	winner := poker.CompareHands(allCards1, allCards2)
