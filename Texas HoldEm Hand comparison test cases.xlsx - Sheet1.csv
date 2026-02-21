@@ -1,4 +1,4 @@
-,community cards,player 1,hand 1,player 2,hand 2,result,,comment
+         ,community cards,player 1,hand 1,player 2,hand 2,result,,comment
 High Card,D6  S9  H4 S3 C2,SK CA,CA SK S9 D6 H4,HA SQ,HA SQ S9 D6 H4,hand 1 > hand 2,,SK > SQ
 High Card,,,D6 CA H4 SK S9,,HA D6 SQ H4 S9,hand 1 > hand 2,,hands are only permutations of previous line
 High Card,D6  S9  H4 S3 C2,SK CA,CA SK S9 D6 H4,HA CK,HA SK S9 D6 H4,hand 1 = hand 2,,
