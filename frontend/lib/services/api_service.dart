@@ -29,22 +29,16 @@ class ApiService {
 
   Future<Map<String, dynamic>> compareHands(
       List<String> player1Hole,
-      List<String> player1Board,
       List<String> player2Hole,
-      List<String> player2Board) async {
+      List<String> communityCards) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/api/compare'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'player1': {
-            'holeCards': player1Hole,
-            'boardCards': player1Board,
-          },
-          'player2': {
-            'holeCards': player2Hole,
-            'boardCards': player2Board,
-          },
+          'player1HoleCards': player1Hole,
+          'player2HoleCards': player2Hole,
+          'communityCards': communityCards,
         }),
       );
 

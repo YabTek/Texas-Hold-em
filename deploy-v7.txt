@@ -1,18 +1,20 @@
 DEPLOYMENT COMMANDS FOR GCP CLOUD SHELL
 =========================================
 
+!! IMPORTANT: Backend v3 and Frontend v9 REQUIRED !!
+
 1. Open GCP Cloud Shell at: https://console.cloud.google.com/
 
 2. Run these commands one by one:
 
-# Deploy Backend v2 (contains poker logic fix)
-kubectl set image deployment/poker-backend backend=gcr.io/texas-holdem-poker-3269/poker-backend:v2
+# Deploy Backend v3 (CORRECT Texas Hold'em structure with shared community cards)
+kubectl set image deployment/poker-backend backend=gcr.io/texas-holdem-poker-3269/poker-backend:v3
 
 # Wait for backend rollout
 kubectl rollout status deployment/poker-backend
 
-# Deploy Frontend v8 (fixes DNS resolution error + final UI)
-kubectl set image deployment/poker-frontend frontend=gcr.io/texas-holdem-poker-3269/poker-frontend:v8
+# Deploy Frontend v9 (CORRECT UI with shared community cards)
+kubectl set image deployment/poker-frontend frontend=gcr.io/texas-holdem-poker-3269/poker-frontend:v9
 
 # Wait for frontend rollout
 kubectl rollout status deployment/poker-frontend
@@ -24,14 +26,26 @@ kubectl get pods
 3. After both rollouts complete, refresh your browser at:
    http://34.26.210.67
 
-4. Test that the error is gone and all screens work properly
+4. Test Compare Hands feature:
+   - Enter 5 community cards (shared by both players)
+   - Enter Player 1's 2 hole cards
+   - Enter Player 2's 2 hole cards
+   - Each player makes their best hand from 2 hole + 5 community cards
 
 WHAT THIS FIXES:
-- Backend v2: Fixes poker logic (all 27 test cases pass)
-- Frontend v8: CRITICAL FIX - resolves DNS error ERR_NAME_NOT_RESOLVED
-  * Changed API calls from absolute URL to relative paths (/api/...)
-  * Added nginx proxy configuration to forward /api/* to backend
+- Backend v3: 
+  * Correct Texas Hold'em structure: ONE set of community cards shared by all players
+  * Each player has 2 private hole cards
+  * API now accepts: player1HoleCards, player2HoleCards, communityCards
+  * ALL CSV test cases pass (verified with TestCompareHandsCSV)
+  
+- Frontend v9: 
+  * UI redesigned: Community Cards section at top (shared)
+  * Player 1 section: only 2 hole cards
+  * Player 2 section: only 2 hole cards
+  * Fixes DNS error (nginx proxy for /api/*)
   * Complete blue theme, "Community Cards" everywhere
-- The "ERR_NAME_NOT_RESOLVED" error will be resolved with v8
+
+- This matches the correct Texas Hold'em rules as shown in your test cases file
 
 NOTE: These commands must be run in GCP Cloud Shell, not local PowerShell.

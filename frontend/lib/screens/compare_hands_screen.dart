@@ -10,14 +10,12 @@ class CompareHandsScreen extends StatefulWidget {
 
 class _CompareHandsScreenState extends State<CompareHandsScreen> {
   final ApiService _apiService = ApiService();
+  final List<TextEditingController> _communityControllers =
+      List.generate(5, (_) => TextEditingController());
   final List<TextEditingController> _p1HoleControllers =
       List.generate(2, (_) => TextEditingController());
-  final List<TextEditingController> _p1BoardControllers =
-      List.generate(5, (_) => TextEditingController());
   final List<TextEditingController> _p2HoleControllers =
       List.generate(2, (_) => TextEditingController());
-  final List<TextEditingController> _p2BoardControllers =
-      List.generate(5, (_) => TextEditingController());
 
   bool _loading = false;
   Map<String, dynamic>? _result;
@@ -25,16 +23,13 @@ class _CompareHandsScreenState extends State<CompareHandsScreen> {
 
   @override
   void dispose() {
+    for (var controller in _communityControllers) {
+      controller.dispose();
+    }
     for (var controller in _p1HoleControllers) {
       controller.dispose();
     }
-    for (var controller in _p1BoardControllers) {
-      controller.dispose();
-    }
     for (var controller in _p2HoleControllers) {
-      controller.dispose();
-    }
-    for (var controller in _p2BoardControllers) {
       controller.dispose();
     }
     super.dispose();
@@ -49,6 +44,17 @@ class _CompareHandsScreenState extends State<CompareHandsScreen> {
   }
 
   String? _validateInputs() {
+    // Check community cards
+    for (int i = 0; i < _communityControllers.length; i++) {
+      final card = _communityControllers[i].text.trim().toUpperCase();
+      if (card.isEmpty) {
+        return 'Please enter all 5 community cards';
+      }
+      if (!_isValidCard(card)) {
+        return 'Invalid community card: ${_communityControllers[i].text}\nUse format like HA, S7, CT, DK';
+      }
+    }
+
     // Check Player 1 hole cards
     for (int i = 0; i < _p1HoleControllers.length; i++) {
       final card = _p1HoleControllers[i].text.trim().toUpperCase();
@@ -60,17 +66,6 @@ class _CompareHandsScreenState extends State<CompareHandsScreen> {
       }
     }
 
-    // Check Player 1 community cards
-    for (int i = 0; i < _p1BoardControllers.length; i++) {
-      final card = _p1BoardControllers[i].text.trim().toUpperCase();
-      if (card.isEmpty) {
-        return 'Please enter all 5 community cards for Player 1';
-      }
-      if (!_isValidCard(card)) {
-        return 'Invalid Player 1 community card: ${_p1BoardControllers[i].text}\nUse format like HA, S7, CT, DK';
-      }
-    }
-
     // Check Player 2 hole cards
     for (int i = 0; i < _p2HoleControllers.length; i++) {
       final card = _p2HoleControllers[i].text.trim().toUpperCase();
@@ -79,17 +74,6 @@ class _CompareHandsScreenState extends State<CompareHandsScreen> {
       }
       if (!_isValidCard(card)) {
         return 'Invalid Player 2 card: ${_p2HoleControllers[i].text}\nUse format like HA, S7, CT, DK';
-      }
-    }
-
-    // Check Player 2 community cards
-    for (int i = 0; i < _p2BoardControllers.length; i++) {
-      final card = _p2BoardControllers[i].text.trim().toUpperCase();
-      if (card.isEmpty) {
-        return 'Please enter all 5 community cards for Player 2';
-      }
-      if (!_isValidCard(card)) {
-        return 'Invalid Player 2 community card: ${_p2BoardControllers[i].text}\nUse format like HA, S7, CT, DK';
       }
     }
 
@@ -113,12 +97,11 @@ class _CompareHandsScreenState extends State<CompareHandsScreen> {
     });
 
     try {
+      final communityCards = _communityControllers.map((c) => c.text.toUpperCase()).toList();
       final p1Hole = _p1HoleControllers.map((c) => c.text.toUpperCase()).toList();
-      final p1Board = _p1BoardControllers.map((c) => c.text.toUpperCase()).toList();
       final p2Hole = _p2HoleControllers.map((c) => c.text.toUpperCase()).toList();
-      final p2Board = _p2BoardControllers.map((c) => c.text.toUpperCase()).toList();
 
-      final result = await _apiService.compareHands(p1Hole, p1Board, p2Hole, p2Board);
+      final result = await _apiService.compareHands(p1Hole, p2Hole, communityCards);
 
       setState(() {
         _result = result;
@@ -136,60 +119,102 @@ class _CompareHandsScreenState extends State<CompareHandsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Compare Hands'),
+        title: const Text('Compare Hands', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildPlayerSection(
-              'Player 1',
-              _p1HoleControllers,
-              _p1BoardControllers,
-            ),
-            const SizedBox(height: 24),
-            _buildPlayerSection(
-              'Player 2',
-              _p2HoleControllers,
-              _p2BoardControllers,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _loading ? null : _compareHands,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-                backgroundColor: const Color(0xFF2E8B57),
-              ),
-              child: _loading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
-                      'Compare Hands',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 16),
-              Card(
-                color: Colors.red[900],
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    _error!,
-                    style: const TextStyle(color: Colors.white),
-                  ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color(0xFF0d1b2a),
+              const Color(0xFF1b263b),
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Community Cards Section
+              const Text(
+                'COMMUNITY CARDS (SHARED)',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFff6b35),
+                  letterSpacing: 1.2,
                 ),
               ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (int i = 0; i < 5; i++)
+                    SizedBox(
+                      width: (MediaQuery.of(context).size.width - 48) / 3,
+                      child: _buildCardInput(_communityControllers[i], 'Card ${i + 1}'),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              
+              // Player 1 Section
+              _buildPlayerSection(
+                'PLAYER 1',
+                _p1HoleControllers,
+                const Color(0xFF1e3a5f),
+              ),
+              const SizedBox(height: 16),
+              
+              // Player 2 Section
+              _buildPlayerSection(
+                'PLAYER 2',
+                _p2HoleControllers,
+                const Color(0xFF1e3a5f),
+              ),
+              const SizedBox(height: 24),
+              
+              ElevatedButton(
+                onPressed: _loading ? null : _compareHands,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.all(18),
+                  backgroundColor: const Color(0xFF4a5bc0),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: _loading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'COMPARE HANDS',
+                        style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+                      ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFc1121f),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                ),
+              ],
+              if (_result != null) ...[
+                const SizedBox(height: 16),
+                _buildWinnerCard(),
+                const SizedBox(height: 16),
+                _buildPlayerResult('Player 1', _result!['player1']),
+                const SizedBox(height: 16),
+                _buildPlayerResult('Player 2', _result!['player2']),
+              ],
             ],
-            if (_result != null) ...[
-              const SizedBox(height: 16),
-              _buildWinnerCard(),
-              const SizedBox(height: 16),
-              _buildPlayerResult('Player 1', _result!['player1']),
-              const SizedBox(height: 16),
-              _buildPlayerResult('Player 2', _result!['player2']),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -198,10 +223,11 @@ class _CompareHandsScreenState extends State<CompareHandsScreen> {
   Widget _buildPlayerSection(
     String title,
     List<TextEditingController> holeControllers,
-    List<TextEditingController> boardControllers,
+    Color cardColor,
   ) {
     return Card(
-      color: const Color(0xFF1e3a5f),
+      color: cardColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -210,18 +236,19 @@ class _CompareHandsScreenState extends State<CompareHandsScreen> {
             Text(
               title,
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
+                letterSpacing: 1.2,
               ),
             ),
             const SizedBox(height: 12),
             const Text(
               'Hole Cards (2)',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Colors.white70,
+                color: Color(0xFF9db4c8),
               ),
             ),
             const SizedBox(height: 8),
@@ -235,27 +262,6 @@ class _CompareHandsScreenState extends State<CompareHandsScreen> {
                 ],
               ],
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Community Cards (5)',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white70,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (int i = 0; i < 5; i++)
-                  SizedBox(
-                    width: (MediaQuery.of(context).size.width - 80) / 3,
-                    child: _buildCardInput(boardControllers[i], 'Card ${i + 1}'),
-                  ),
-              ],
-            ),
           ],
         ),
       ),
@@ -267,21 +273,32 @@ class _CompareHandsScreenState extends State<CompareHandsScreen> {
       controller: controller,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70, fontSize: 12),
+        labelStyle: const TextStyle(color: Color(0xFF9db4c8), fontSize: 12),
         hintText: 'HA',
-        hintStyle: const TextStyle(color: Colors.white30),
+        hintStyle: const TextStyle(color: Colors.white24),
         filled: true,
         fillColor: const Color(0xFF0d1b2a),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: const Color(0xFF4a90e2).withOpacity(0.3)),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: const Color(0xFF4a90e2).withOpacity(0.3)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFF4a90e2), width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       ),
       style: const TextStyle(
         color: Colors.white,
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: FontWeight.bold,
+        letterSpacing: 2,
       ),
+      textAlign: TextAlign.center,
       textCapitalization: TextCapitalization.characters,
       maxLength: 2,
       buildCounter: (context,
@@ -292,98 +309,121 @@ class _CompareHandsScreenState extends State<CompareHandsScreen> {
 
   Widget _buildWinnerCard() {
     final winner = _result!['winner'];
-    MaterialColor winnerColor;
+    Color winnerColor;
     IconData icon;
 
     if (winner == 'Tie') {
-      winnerColor = Colors.orange;
+      winnerColor = const Color(0xFFff6b35);
       icon = Icons.handshake;
     } else {
-      winnerColor = Colors.blue;
+      winnerColor = const Color(0xFF4a5bc0);
       icon = Icons.emoji_events;
     }
 
-    return Card(
-      color: winnerColor[700],
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 32),
-            const SizedBox(width: 12),
-            Text(
-              winner == 'Tie' ? 'It\'s a Tie!' : '$winner Wins!',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: winnerColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: Colors.white, size: 32),
+          const SizedBox(width: 12),
+          Text(
+            winner == 'Tie' ? 'It\'s a Tie!' : '$winner Wins!',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: 1.2,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildPlayerResult(String playerName, Map<String, dynamic> data) {
-    return Card(
-      color: const Color(0xFF1e3a5f),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              playerName,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildResultRow('Best Hand', data['bestHand']),
-            _buildResultRow('Hand Value', data['handValue']),
-            const SizedBox(height: 8),
-            const Text(
-              'Best 5 Cards:',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.white70,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Wrap(
-              spacing: 6,
-              children: [
-                for (var card in data['cards']) _buildCardChip(card),
-              ],
-            ),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF1e3a5f),
+            const Color(0xFF2a5a8f),
           ],
         ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            playerName,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFff6b35),
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildResultRow('Best Hand', data['bestHand']),
+          _buildResultRow('Hand Value', data['handValue']),
+          const SizedBox(height: 12),
+          const Text(
+            'Best 5 Cards:',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            children: [
+              for (var card in data['cards']) _buildCardChip(card),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildResultRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
           Text(
             '$label: ',
             style: const TextStyle(
-              fontSize: 14,
-              color: Colors.white70,
+              fontSize: 16,
+              color: Color(0xFF9db4c8),
             ),
           ),
           Expanded(
             child: Text(
               value,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
@@ -401,11 +441,11 @@ class _CompareHandsScreenState extends State<CompareHandsScreen> {
         style: const TextStyle(
           fontWeight: FontWeight.bold,
           color: Colors.white,
-          fontSize: 12,
+          fontSize: 14,
         ),
       ),
-      backgroundColor: const Color(0xFF2E8B57),
-      padding: EdgeInsets.zero,
+      backgroundColor: const Color(0xFF4a5bc0),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }

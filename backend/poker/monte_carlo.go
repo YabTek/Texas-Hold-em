@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// MonteCarloSimulation runs Monte Carlo simulation to calculate win probability
 func MonteCarloSimulation(holeCardsStrs, boardCardsStrs []string, numPlayers, numSimulations int) (float64, float64, float64) {
 	holeCards, err := ParseCards(holeCardsStrs)
 	if err != nil {
